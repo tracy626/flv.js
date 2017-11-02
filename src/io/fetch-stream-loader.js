@@ -17,9 +17,27 @@
  */
 
 import Log from '../utils/logger.js';
-import Browser from '../utils/browser.js';
-import {BaseLoader, LoaderStatus, LoaderErrors} from './loader.js';
+// import Browser from '../utils/browser.js';
+// import {BaseLoader, LoaderStatus, LoaderErrors} from './loader.js';
 import {RuntimeException} from '../utils/exception.js';
+import {NotImplementedException} from '../utils/exception.js';
+
+export const LoaderStatus = {
+    kIdle: 0,
+    kConnecting: 1,
+    kBuffering: 2,
+    kError: 3,
+    kComplete: 4
+};
+
+export const LoaderErrors = {
+    OK: 'OK',
+    EXCEPTION: 'Exception',
+    HTTP_STATUS_CODE_INVALID: 'HttpStatusCodeInvalid',
+    CONNECTING_TIMEOUT: 'ConnectingTimeout',
+    EARLY_EOF: 'EarlyEof',
+    UNRECOVERABLE_EARLY_EOF: 'UnrecoverableEarlyEof'
+};
 
 /* fetch + stream IO loader. Currently working on chrome 43+.
  * fetch provides a better alternative http API to XMLHttpRequest
@@ -27,24 +45,33 @@ import {RuntimeException} from '../utils/exception.js';
  * fetch spec   https://fetch.spec.whatwg.org/
  * stream spec  https://streams.spec.whatwg.org/
  */
-class FetchStreamLoader extends BaseLoader {
+export class FetchStreamLoader {
 
-    static isSupported() {
-        try {
-            // fetch + stream is broken on Microsoft Edge. Disable before build 15048.
-            // see https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/8196907/
-            // Fixed in Jan 10, 2017. Build 15048+ removed from blacklist.
-            let isWorkWellEdge = Browser.msedge && Browser.version.minor >= 15048;
-            let browserNotBlacklisted = Browser.msedge ? isWorkWellEdge : true;
-            return (self.fetch && self.ReadableStream && browserNotBlacklisted);
-        } catch (e) {
-            return false;
-        }
-    }
+    // static isSupported() {
+    //     try {
+    //         // fetch + stream is broken on Microsoft Edge. Disable before build 15048.
+    //         // see https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/8196907/
+    //         // Fixed in Jan 10, 2017. Build 15048+ removed from blacklist.
+    //         let isWorkWellEdge = false;
+    //         let browserNotBlacklisted = true;
+    //         return (self.fetch && self.ReadableStream && browserNotBlacklisted);
+    //     } catch (e) {
+    //         return false;
+    //     }
+    // }
 
     constructor(seekHandler, config) {
-        super('fetch-stream-loader');
+        this._type = 'fetch-stream-loader';
         this.TAG = 'FetchStreamLoader';
+
+        this._status = LoaderStatus.kIdle;
+        this._needStash = false;
+        // callbacks
+        this._onContentLengthKnown = null;
+        this._onURLRedirect = null;
+        this._onDataArrival = null;
+        this._onError = null;
+        this._onComplete = null;
 
         this._seekHandler = seekHandler;
         this._config = config;
@@ -59,7 +86,69 @@ class FetchStreamLoader extends BaseLoader {
         if (this.isWorking()) {
             this.abort();
         }
-        super.destroy();
+        this._status = LoaderStatus.kIdle;
+        this._onContentLengthKnown = null;
+        this._onURLRedirect = null;
+        this._onDataArrival = null;
+        this._onError = null;
+        this._onComplete = null;
+    }
+
+
+    isWorking() {
+        return this._status === LoaderStatus.kConnecting || this._status === LoaderStatus.kBuffering;
+    }
+
+    get type() {
+        return this._type;
+    }
+
+    get status() {
+        return this._status;
+    }
+
+    get needStashBuffer() {
+        return this._needStash;
+    }
+
+    get onContentLengthKnown() {
+        return this._onContentLengthKnown;
+    }
+
+    set onContentLengthKnown(callback) {
+        this._onContentLengthKnown = callback;
+    }
+
+    get onURLRedirect() {
+        return this._onURLRedirect;
+    }
+
+    set onURLRedirect(callback) {
+        this._onURLRedirect = callback;
+    }
+
+    get onDataArrival() {
+        return this._onDataArrival;
+    }
+
+    set onDataArrival(callback) {
+        this._onDataArrival = callback;
+    }
+
+    get onError() {
+        return this._onError;
+    }
+
+    set onError(callback) {
+        this._onError = callback;
+    }
+
+    get onComplete() {
+        return this._onComplete;
+    }
+
+    set onComplete(callback) {
+        this._onComplete = callback;
     }
 
     open(dataSource, range) {
@@ -185,12 +274,12 @@ class FetchStreamLoader extends BaseLoader {
                 this._pump(reader);
             }
         }).catch((e) => {
-            if (e.code === 11 && Browser.msedge) {  // InvalidStateError on Microsoft Edge
-                // Workaround: Edge may throw InvalidStateError after ReadableStreamReader.cancel() call
-                // Ignore the unknown exception.
-                // Related issue: https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11265202/
-                return;
-            }
+            // if (e.code === 11 && Browser.msedge) {  // InvalidStateError on Microsoft Edge
+            //     // Workaround: Edge may throw InvalidStateError after ReadableStreamReader.cancel() call
+            //     // Ignore the unknown exception.
+            //     // Related issue: https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11265202/
+            //     return;
+            // }
 
             this._status = LoaderStatus.kError;
             let type = 0;
@@ -216,4 +305,4 @@ class FetchStreamLoader extends BaseLoader {
 
 }
 
-export default FetchStreamLoader;
+// export default FetchStreamLoader;

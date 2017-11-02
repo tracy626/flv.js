@@ -18,11 +18,11 @@
 
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
-import LoggingControl from '../utils/logging-control.js';
+// import LoggingControl from '../utils/logging-control.js';
 import TransmuxingController from './transmuxing-controller.js';
-import TransmuxingEvents from './transmuxing-events.js';
-import TransmuxingWorker from './transmuxing-worker.js';
-import MediaInfo from './media-info.js';
+import {TransmuxingEvents} from '../errnevent.js';
+// import TransmuxingWorker from './transmuxing-worker.js';
+import {MediaInfo} from './media-info.js';
 
 class Transmuxer {
 
@@ -30,26 +30,26 @@ class Transmuxer {
         this.TAG = 'Transmuxer';
         this._emitter = new EventEmitter();
 
-        if (config.enableWorker && typeof (Worker) !== 'undefined') {
-            try {
-                let work = require('webworkify');
-                this._worker = work(TransmuxingWorker);
-                this._workerDestroying = false;
-                this._worker.addEventListener('message', this._onWorkerMessage.bind(this));
-                this._worker.postMessage({cmd: 'init', param: [mediaDataSource, config]});
-                this.e = {
-                    onLoggingConfigChanged: this._onLoggingConfigChanged.bind(this)
-                };
-                LoggingControl.registerListener(this.e.onLoggingConfigChanged);
-                this._worker.postMessage({cmd: 'logging_config', param: LoggingControl.getConfig()});
-            } catch (error) {
-                Log.e(this.TAG, 'Error while initialize transmuxing worker, fallback to inline transmuxing');
-                this._worker = null;
-                this._controller = new TransmuxingController(mediaDataSource, config);
-            }
-        } else {
-            this._controller = new TransmuxingController(mediaDataSource, config);
-        }
+        // if (config.enableWorker && typeof (Worker) !== 'undefined') {
+        //     try {
+        //         let work = require('webworkify');
+        //         this._worker = work(TransmuxingWorker);
+        //         this._workerDestroying = false;
+        //         this._worker.addEventListener('message', this._onWorkerMessage.bind(this));
+        //         this._worker.postMessage({cmd: 'init', param: [mediaDataSource, config]});
+        //         this.e = {
+        //             onLoggingConfigChanged: this._onLoggingConfigChanged.bind(this)
+        //         };
+        //         LoggingControl.registerListener(this.e.onLoggingConfigChanged);
+        //         this._worker.postMessage({cmd: 'logging_config', param: LoggingControl.getConfig()});
+        //     } catch (error) {
+        //         Log.e(this.TAG, 'Error while initialize transmuxing worker, fallback to inline transmuxing');
+        //         this._worker = null;
+        //         this._controller = new TransmuxingController(mediaDataSource, config);
+        //     }
+        // } else {
+        // }
+        this._controller = new TransmuxingController(mediaDataSource, config);
 
         if (this._controller) {
             let ctl = this._controller;
@@ -66,17 +66,17 @@ class Transmuxer {
     }
 
     destroy() {
-        if (this._worker) {
-            if (!this._workerDestroying) {
-                this._workerDestroying = true;
-                this._worker.postMessage({cmd: 'destroy'});
-                LoggingControl.removeListener(this.e.onLoggingConfigChanged);
-                this.e = null;
-            }
-        } else {
-            this._controller.destroy();
-            this._controller = null;
-        }
+        // if (this._worker) {
+        //     if (!this._workerDestroying) {
+        //         this._workerDestroying = true;
+        //         this._worker.postMessage({cmd: 'destroy'});
+        //         LoggingControl.removeListener(this.e.onLoggingConfigChanged);
+        //         this.e = null;
+        //     }
+        // } else {
+        // }
+        this._controller.destroy();
+        this._controller = null;
         this._emitter.removeAllListeners();
         this._emitter = null;
     }
@@ -128,8 +128,10 @@ class Transmuxer {
     resume() {
         if (this._worker) {
             this._worker.postMessage({cmd: 'resume'});
+            Log.i(this.TAG, 'rusume by worker');
         } else {
             this._controller.resume();
+            Log.i(this.TAG, 'Not rusume by worker');
         }
     }
 

@@ -18,9 +18,9 @@
 
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
-import Browser from '../utils/browser.js';
-import MSEEvents from './mse-events.js';
-import {SampleInfo, IDRSampleList} from './media-segment-info.js';
+// import Browser from '../utils/browser.js';
+import {MSEEvents} from '../errnevent.js';
+import {SampleInfo, IDRSampleList} from './media-info.js';
 import {IllegalStateException} from '../utils/exception.js';
 
 // Media Source Extensions controller
@@ -208,13 +208,13 @@ class MSEController {
                 this._doAppendSegments();
             }
         }
-        if (Browser.safari && is.container === 'audio/mpeg' && is.mediaDuration > 0) {
-            // 'audio/mpeg' track under Safari may cause MediaElement's duration to be NaN
-            // Manually correct MediaSource.duration to make progress bar seekable, and report right duration
-            this._requireSetMediaDuration = true;
-            this._pendingMediaDuration = is.mediaDuration / 1000;  // in seconds
-            this._updateMediaSourceDuration();
-        }
+        // if (Browser.safari && is.container === 'audio/mpeg' && is.mediaDuration > 0) {
+        //     // 'audio/mpeg' track under Safari may cause MediaElement's duration to be NaN
+        //     // Manually correct MediaSource.duration to make progress bar seekable, and report right duration
+        //     this._requireSetMediaDuration = true;
+        //     this._pendingMediaDuration = is.mediaDuration / 1000;  // in seconds
+        //     this._updateMediaSourceDuration();
+        // }
     }
 
     appendMediaSegment(mediaSegment) {
@@ -277,15 +277,15 @@ class MSEController {
             // Safari 10 may get InvalidStateError in the later appendBuffer() after SourceBuffer.remove() call
             // Internal parser's state may be invalid at this time. Re-append last InitSegment to workaround.
             // Related issue: https://bugs.webkit.org/show_bug.cgi?id=159230
-            if (Browser.safari) {
-                let lastInitSegment = this._lastInitSegments[type];
-                if (lastInitSegment) {
-                    this._pendingSegments[type].push(lastInitSegment);
-                    if (!sb.updating) {
-                        this._doAppendSegments();
-                    }
-                }
-            }
+            // if (Browser.safari) {
+            //     let lastInitSegment = this._lastInitSegments[type];
+            //     if (lastInitSegment) {
+            //         this._pendingSegments[type].push(lastInitSegment);
+            //         if (!sb.updating) {
+            //             this._doAppendSegments();
+            //         }
+            //     }
+            // }
         }
     }
 

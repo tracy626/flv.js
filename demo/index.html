@@ -57,7 +57,7 @@
 <body>
     
     <div class="mainContainer">
-        <input name="urlinput" class="urlInput" type="text" value="http://127.0.0.1/flv/7182741.json"/>
+        <input name="urlinput" class="urlInput" type="text" value="/dist/bbb.flv"/>
         <video name="videoElement" class="centeredVideo" controls autoplay width="1024" height="576">
             Your browser is too old which doesn't support HTML5 video.
         </video>
@@ -72,17 +72,21 @@
         <textarea name="logcatbox" class="logcatBox" rows="10" readonly></textarea>
     </div>
 
-    <script src="../dist/flv.js"></script>
+    <script src="/dist/flv.js"></script>
     
     <script>
         function flv_load() {
-            console.log('isSupported: ' + flvjs.isSupported());
+            // console.log('isSupported: ' + flvjs.isSupported());
             var urlinput = document.getElementsByName('urlinput')[0];
 
             var xhr = new XMLHttpRequest();
             xhr.open('GET', urlinput.value, true);
+            xhr.withCredentials = true;
             xhr.onload = function (e) {
-                var mediaDataSource = JSON.parse(xhr.response);
+                var mediaDataSource = {
+                    type: 'flv',
+                    url: urlinput.value
+                };
 
                 var element = document.getElementsByName('videoElement')[0];
                 if (typeof player !== "undefined") {
@@ -141,11 +145,11 @@
         var url = decodeURIComponent(getUrlParam('src', urlInputBox.value));
         urlInputBox.value = url;
 
-        var logcatbox = document.getElementsByName('logcatbox')[0];
-        flvjs.LoggingControl.addLogListener(function(type, str) {
-            logcatbox.value = logcatbox.value + str + '\n';
-            logcatbox.scrollTop = logcatbox.scrollHeight;
-        });
+        // var logcatbox = document.getElementsByName('logcatbox')[0];
+        // flvjs.LoggingControl.addLogListener(function(type, str) {
+        //     logcatbox.value = logcatbox.value + str + '\n';
+        //     logcatbox.scrollTop = logcatbox.scrollHeight;
+        // });
 
         document.addEventListener('DOMContentLoaded', function () {
             flv_load();

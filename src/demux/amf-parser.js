@@ -17,7 +17,7 @@
  */
 
 import Log from '../utils/logger.js';
-import decodeUTF8 from '../utils/utf8-conv.js';
+// import decodeUTF8 from '../utils/utf8-conv.js';
 import {IllegalStateException} from '../utils/exception.js';
 
 let le = (function () {
@@ -25,6 +25,11 @@ let le = (function () {
     (new DataView(buf)).setInt16(0, 256, true);  // little-endian write
     return (new Int16Array(buf))[0] === 256;  // platform-spec read, if equal then LE
 })();
+
+function decodeUTF8(dataview, offset, len) {
+    let bf = new Buffer(dataview.buffer, offset, len);
+    return bf.toString('ascii');
+}
 
 class AMF {
 
@@ -74,7 +79,7 @@ class AMF {
 
         let str;
         if (length > 0) {
-            str = decodeUTF8(new Uint8Array(arrayBuffer, dataOffset + 2, length));
+            str = decodeUTF8(v, dataOffset + 2, length);
         } else {
             str = '';
         }
@@ -94,7 +99,7 @@ class AMF {
 
         let str;
         if (length > 0) {
-            str = decodeUTF8(new Uint8Array(arrayBuffer, dataOffset + 4, length));
+            str = decodeUTF8(v, dataOffset + 4, length);
         } else {
             str = '';
         }

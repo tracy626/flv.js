@@ -18,14 +18,14 @@
 
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
-import Browser from '../utils/browser.js';
-import PlayerEvents from './player-events.js';
+// import Browser from '../utils/browser.js';
+import {PlayerEvents, TransmuxingEvents, MSEEvents, ErrorTypes, ErrorDetails} from '../errnevent.js';
 import Transmuxer from '../core/transmuxer.js';
-import TransmuxingEvents from '../core/transmuxing-events.js';
+// import TransmuxingEvents from '../core/transmuxing-events.js';
 import MSEController from '../core/mse-controller.js';
-import MSEEvents from '../core/mse-events.js';
-import {ErrorTypes, ErrorDetails} from './player-errors.js';
-import {createDefaultConfig} from '../config.js';
+// import MSEEvents from '../core/mse-events.js';
+// import {ErrorTypes, ErrorDetails} from './player-errors.js';
+// import {createDefaultConfig} from '../config.js';
 import {InvalidArgumentException, IllegalStateException} from '../utils/exception.js';
 
 class FlvPlayer {
@@ -35,7 +35,35 @@ class FlvPlayer {
         this._type = 'FlvPlayer';
         this._emitter = new EventEmitter();
 
-        this._config = createDefaultConfig();
+        this._config = {
+            enableWorker: false,
+            enableStashBuffer: true,
+            stashInitialSize: undefined,
+        
+            isLive: false,
+        
+            lazyLoad: true,
+            lazyLoadMaxDuration: 3 * 60,
+            lazyLoadRecoverDuration: 30,
+            deferLoadAfterSourceOpen: true,
+        
+            // autoCleanupSourceBuffer: default as false, leave unspecified
+            autoCleanupMaxBackwardDuration: 3 * 60,
+            autoCleanupMinBackwardDuration: 2 * 60,
+        
+            statisticsInfoReportInterval: 600,
+        
+            fixAudioTimestampGap: true,
+        
+            accurateSeek: false,
+            seekType: 'range',  // [range, param, custom]
+            seekParamStart: 'bstart',
+            seekParamEnd: 'bend',
+            rangeLoadZeroStart: false,
+            customSeekHandler: undefined,
+            reuseRedirectedURL: false
+            // referrerPolicy: leave as unspecified
+        };
         if (typeof config === 'object') {
             Object.assign(this._config, config);
         }
@@ -79,10 +107,8 @@ class FlvPlayer {
         this._mediaInfo = null;
         this._statisticsInfo = null;
 
-        let chromeNeedIDRFix = (Browser.chrome &&
-                               (Browser.version.major < 50 ||
-                               (Browser.version.major === 50 && Browser.version.build < 2661)));
-        this._alwaysSeekKeyframe = (chromeNeedIDRFix || Browser.msedge || Browser.msie) ? true : false;
+        let chromeNeedIDRFix = false;
+        this._alwaysSeekKeyframe = false;
 
         if (this._alwaysSeekKeyframe) {
             this._config.accurateSeek = false;
@@ -454,10 +480,10 @@ class FlvPlayer {
 
         if (seconds < 1.0 && this._mediaElement.buffered.length > 0) {
             let videoBeginTime = this._mediaElement.buffered.start(0);
-            if ((videoBeginTime < 1.0 && seconds < videoBeginTime) || Browser.safari) {
+            if (videoBeginTime < 1.0 && seconds < videoBeginTime) {
                 directSeekBegin = true;
                 // also workaround for Safari: Seek to 0 may cause video stuck, use 0.1 to avoid
-                directSeekBeginTime = Browser.safari ? 0.1 : videoBeginTime;
+                directSeekBeginTime = videoBeginTime;
             }
         }
 
@@ -557,10 +583,10 @@ class FlvPlayer {
         if (target < 1.0 && buffered.length > 0) {
             // seek to video begin, set currentTime directly if beginPTS buffered
             let videoBeginTime = buffered.start(0);
-            if ((videoBeginTime < 1.0 && target < videoBeginTime) || Browser.safari) {
+            if (videoBeginTime < 1.0 && target < videoBeginTime) {
                 this._requestSetTime = true;
                 // also workaround for Safari: Seek to 0 may cause video stuck, use 0.1 to avoid
-                this._mediaElement.currentTime = Browser.safari ? 0.1 : videoBeginTime;
+                this._mediaElement.currentTime = videoBeginTime;
                 return;
             }
         }

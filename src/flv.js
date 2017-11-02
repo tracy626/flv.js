@@ -16,19 +16,19 @@
  * limitations under the License.
  */
 
-import Polyfill from './utils/polyfill.js';
-import Features from './core/features.js';
+// import Polyfill from './utils/polyfill.js';
+// import Features from './core/features.js';
 import FlvPlayer from './player/flv-player.js';
-import NativePlayer from './player/native-player.js';
-import PlayerEvents from './player/player-events.js';
-import {ErrorTypes, ErrorDetails} from './player/player-errors.js';
-import LoggingControl from './utils/logging-control.js';
+// import NativePlayer from './player/native-player.js';
+// import PlayerEvents from './player/player-events.js';
+import {ErrorTypes, ErrorDetails, PlayerEvents} from './errnevent.js';
+// import LoggingControl from './utils/logging-control.js';
 import {InvalidArgumentException} from './utils/exception.js';
 
 // here are all the interfaces
 
 // install polyfills
-Polyfill.install();
+// Polyfill.install();
 
 
 // factory method
@@ -46,35 +46,36 @@ function createPlayer(mediaDataSource, optionalConfig) {
         case 'flv':
             return new FlvPlayer(mds, optionalConfig);
         default:
-            return new NativePlayer(mds, optionalConfig);
+            // return new NativePlayer(mds, optionalConfig);
+            return;
     }
 }
 
 
 // feature detection
-function isSupported() {
-    return Features.supportMSEH264Playback();
-}
+// function isSupported() {
+//     return Features.supportMSEH264Playback();
+// }
 
-function getFeatureList() {
-    return Features.getFeatureList();
-}
+// function getFeatureList() {
+//     return Features.getFeatureList();
+// }
 
 
 // interfaces
 let flvjs = {};
 
 flvjs.createPlayer = createPlayer;
-flvjs.isSupported = isSupported;
-flvjs.getFeatureList = getFeatureList;
+// flvjs.isSupported = isSupported;
+// flvjs.getFeatureList = getFeatureList;
 
 flvjs.Events = PlayerEvents;
 flvjs.ErrorTypes = ErrorTypes;
 flvjs.ErrorDetails = ErrorDetails;
 
 flvjs.FlvPlayer = FlvPlayer;
-flvjs.NativePlayer = NativePlayer;
-flvjs.LoggingControl = LoggingControl;
+// flvjs.NativePlayer = NativePlayer;
+// flvjs.LoggingControl = LoggingControl;
 
 Object.defineProperty(flvjs, 'version', {
     enumerable: true,

@@ -19,8 +19,8 @@
 import Log from '../utils/logger.js';
 import MP4 from './mp4-generator.js';
 import AAC from './aac-silent.js';
-import Browser from '../utils/browser.js';
-import {SampleInfo, MediaSegmentInfo, MediaSegmentInfoList} from '../core/media-segment-info.js';
+// import Browser from '../utils/browser.js';
+import {SampleInfo, MediaSegmentInfo, MediaSegmentInfoList} from '../core/media-info.js';
 import {IllegalStateException} from '../utils/exception.js';
 
 
@@ -51,16 +51,14 @@ class MP4Remuxer {
 
         // Workaround for chrome < 50: Always force first sample as a Random Access Point in media segment
         // see https://bugs.chromium.org/p/chromium/issues/detail?id=229412
-        this._forceFirstIDR = (Browser.chrome &&
-                              (Browser.version.major < 50 ||
-                              (Browser.version.major === 50 && Browser.version.build < 2661))) ? true : false;
+        this._forceFirstIDR = false;
 
         // Workaround for IE11/Edge: Fill silent aac frame after keyframe-seeking
         // Make audio beginDts equals with video beginDts, in order to fix seek freeze
-        this._fillSilentAfterSeek = (Browser.msedge || Browser.msie);
+        this._fillSilentAfterSeek = false;
 
         // While only FireFox supports 'audio/mp4, codecs="mp3"', use 'audio/mpeg' for chrome, safari, ...
-        this._mp3UseMpegAudio = !Browser.firefox;
+        this._mp3UseMpegAudio = true;
 
         this._fillAudioTimestampGap = this._config.fixAudioTimestampGap;
     }
@@ -300,7 +298,7 @@ class MP4Remuxer {
             let silentFrames = null;
 
             // Silent frame generation, if large timestamp gap detected && config.fixAudioTimestampGap
-            if (sampleDuration > refSampleDuration * 1.5 && this._audioMeta.codec !== 'mp3' && this._fillAudioTimestampGap && !Browser.safari) {
+            if (sampleDuration > refSampleDuration * 1.5 && this._audioMeta.codec !== 'mp3' && this._fillAudioTimestampGap) {
                 // We need to insert silent frames to fill timestamp gap
                 needFillSilentFrames = true;
                 let delta = Math.abs(sampleDuration - refSampleDuration);

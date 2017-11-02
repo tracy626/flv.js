@@ -18,14 +18,14 @@
 
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
-import Browser from '../utils/browser.js';
-import MediaInfo from './media-info.js';
+// import Browser from '../utils/browser.js';
+import {MediaInfo} from './media-info.js';
 import FLVDemuxer from '../demux/flv-demuxer.js';
 import MP4Remuxer from '../remux/mp4-remuxer.js';
-import DemuxErrors from '../demux/demux-errors.js';
+import {DemuxErrors, TransmuxingEvents} from '../errnevent.js';
 import IOController from '../io/io-controller.js';
-import TransmuxingEvents from './transmuxing-events.js';
-import {LoaderStatus, LoaderErrors} from '../io/loader.js';
+// import TransmuxingEvents from './transmuxing-events.js';
+import {LoaderStatus, LoaderErrors} from '../io/fetch-stream-loader.js';
 
 // Transmuxing (IO, Demuxing, Remuxing) controller, with multipart support
 class TransmuxingController {
@@ -369,9 +369,9 @@ class TransmuxingController {
             this._pendingResolveSeekPoint = null;
 
             // Safari: Pass PTS for recommend_seekpoint
-            if (Browser.safari && syncPoints.length > 0 && syncPoints[0].originalDts === seekpoint) {
-                seekpoint = syncPoints[0].pts;
-            }
+            // if (Browser.safari && syncPoints.length > 0 && syncPoints[0].originalDts === seekpoint) {
+            //     seekpoint = syncPoints[0].pts;
+            // }
             // else: use original DTS (keyframe.milliseconds)
 
             this._emitter.emit(TransmuxingEvents.RECOMMEND_SEEKPOINT, seekpoint);

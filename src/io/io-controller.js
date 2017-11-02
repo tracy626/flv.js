@@ -18,14 +18,14 @@
 
 import Log from '../utils/logger.js';
 import SpeedSampler from './speed-sampler.js';
-import {LoaderStatus, LoaderErrors} from './loader.js';
-import FetchStreamLoader from './fetch-stream-loader.js';
-import MozChunkedLoader from './xhr-moz-chunked-loader.js';
-import MSStreamLoader from './xhr-msstream-loader.js';
-import RangeLoader from './xhr-range-loader.js';
-import WebSocketLoader from './websocket-loader.js';
+// import {LoaderStatus, LoaderErrors} from './loader.js';
+import {LoaderStatus, LoaderErrors, FetchStreamLoader} from './fetch-stream-loader.js';
+// import MozChunkedLoader from './xhr-moz-chunked-loader.js';
+// import MSStreamLoader from './xhr-msstream-loader.js';
+// import RangeLoader from './xhr-range-loader.js';
+// import WebSocketLoader from './websocket-loader.js';
 import RangeSeekHandler from './range-seek-handler.js';
-import ParamSeekHandler from './param-seek-handler.js';
+// import ParamSeekHandler from './param-seek-handler.js';
 import {RuntimeException, IllegalStateException, InvalidArgumentException} from '../utils/exception.js';
 
 /**
@@ -64,8 +64,8 @@ class IOController {
         }
 
         this._loader = null;
-        this._loaderClass = null;
-        this._seekHandler = null;
+        // this._loaderClass = FetchStreamLoader;
+        this._seekHandler = new RangeSeekHandler(this._config.rangeLoadZeroStart);
 
         this._dataSource = dataSource;
         this._isWebSocketURL = /wss?:\/\/(.+?)/.test(dataSource.url);
@@ -91,8 +91,8 @@ class IOController {
         this._onRedirect = null;
         this._onRecoveredEarlyEof = null;
 
-        this._selectSeekHandler();
-        this._selectLoader();
+        // this._selectSeekHandler();
+        // this._selectLoader();
         this._createLoader();
     }
 
@@ -102,7 +102,7 @@ class IOController {
         }
         this._loader.destroy();
         this._loader = null;
-        this._loaderClass = null;
+        // this._loaderClass = null;
         this._dataSource = null;
         this._stashBuffer = null;
         this._stashUsed = this._stashSize = this._bufferSize = this._stashByteStart = 0;
@@ -205,10 +205,10 @@ class IOController {
 
     // in KB/s
     get currentSpeed() {
-        if (this._loaderClass === RangeLoader) {
-            // SpeedSampler is inaccuracy if loader is RangeLoader
-            return this._loader.currentSpeed;
-        }
+        // if (this._loaderClass === RangeLoader) {
+        //     // SpeedSampler is inaccuracy if loader is RangeLoader
+        //     return this._loader.currentSpeed;
+        // }
         return this._speedSampler.lastSecondKBps;
     }
 
@@ -216,42 +216,47 @@ class IOController {
         return this._loader.type;
     }
 
-    _selectSeekHandler() {
-        let config = this._config;
+    // _selectSeekHandler() {
+    //     let config = this._config;
 
-        if (config.seekType === 'range') {
-            this._seekHandler = new RangeSeekHandler(this._config.rangeLoadZeroStart);
-        } else if (config.seekType === 'param') {
-            let paramStart = config.seekParamStart || 'bstart';
-            let paramEnd = config.seekParamEnd || 'bend';
+    //     if (config.seekType === 'range') {
+    //         this._seekHandler = new RangeSeekHandler(this._config.rangeLoadZeroStart);
+    //         // Log.i(this.TAG, 'seek type is range');
+    //     // } else if (config.seekType === 'param') {
+    //     //     let paramStart = config.seekParamStart || 'bstart';
+    //     //     let paramEnd = config.seekParamEnd || 'bend';
 
-            this._seekHandler = new ParamSeekHandler(paramStart, paramEnd);
-        } else if (config.seekType === 'custom') {
-            if (typeof config.customSeekHandler !== 'function') {
-                throw new InvalidArgumentException('Custom seekType specified in config but invalid customSeekHandler!');
-            }
-            this._seekHandler = new config.customSeekHandler();
-        } else {
-            throw new InvalidArgumentException(`Invalid seekType in config: ${config.seekType}`);
-        }
-    }
+    //     //     this._seekHandler = new ParamSeekHandler(paramStart, paramEnd);
+    //     //     Log.i(this.TAG, 'seek type is param');            
+    //     // } else if (config.seekType === 'custom') {
+    //     //     if (typeof config.customSeekHandler !== 'function') {
+    //     //         throw new InvalidArgumentException('Custom seekType specified in config but invalid customSeekHandler!');
+    //     //     }
+    //     //     this._seekHandler = new config.customSeekHandler();
+    //     //     Log.i(this.TAG, 'seek type is custom');
+    //     } else {
+    //         throw new InvalidArgumentException(`Invalid seekType in config: ${config.seekType}`);
+    //     }
+    // }
 
-    _selectLoader() {
-        if (this._isWebSocketURL) {
-            this._loaderClass = WebSocketLoader;
-        } else if (FetchStreamLoader.isSupported()) {
-            this._loaderClass = FetchStreamLoader;
-        } else if (MozChunkedLoader.isSupported()) {
-            this._loaderClass = MozChunkedLoader;
-        } else if (RangeLoader.isSupported()) {
-            this._loaderClass = RangeLoader;
-        } else {
-            throw new RuntimeException('Your browser doesn\'t support xhr with arraybuffer responseType!');
-        }
-    }
+    // _selectLoader() {
+    //     // if (this._isWebSocketURL) {
+    //     //     this._loaderClass = WebSocketLoader;
+    //     // } else
+    //     if (FetchStreamLoader.isSupported()) {
+    //         this._loaderClass = FetchStreamLoader;
+    //     // } 
+    //     // else if (MozChunkedLoader.isSupported()) {
+    //     //     this._loaderClass = MozChunkedLoader;
+    //     // } else if (RangeLoader.isSupported()) {
+    //     //     this._loaderClass = RangeLoader;
+    //     } else {
+    //         throw new RuntimeException('Your browser doesn\'t support xhr with arraybuffer responseType!');
+    //     }
+    // }
 
     _createLoader() {
-        this._loader = new this._loaderClass(this._seekHandler, this._config);
+        this._loader = new FetchStreamLoader(this._seekHandler, this._config);
         if (this._loader.needStashBuffer === false) {
             this._enableStash = false;
         }
