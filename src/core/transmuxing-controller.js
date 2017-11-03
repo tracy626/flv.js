@@ -21,6 +21,7 @@ import Log from '../utils/logger.js';
 // import Browser from '../utils/browser.js';
 import {MediaInfo} from './media-info.js';
 import FLVDemuxer from '../demux/flv-demuxer.js';
+import MP4Demuxer from '../demux/mp4-demuxer.js';
 import MP4Remuxer from '../remux/mp4-remuxer.js';
 import {DemuxErrors, TransmuxingEvents} from '../errnevent.js';
 import IOController from '../io/io-controller.js';
@@ -242,9 +243,9 @@ class TransmuxingController {
             this._demuxer.timestampBase = this._mediaDataSource.segments[this._currentSegmentIndex].timestampBase;
 
             consumed = this._demuxer.parseChunks(data, byteStart);
-        } else if ((probeData = FLVDemuxer.probe(data)).match) {
+        } else if ((probeData = MP4Demuxer.probe(data)).match) {
             // Always create new FLVDemuxer
-            this._demuxer = new FLVDemuxer(probeData, this._config);
+            this._demuxer = new MP4Demuxer(probeData, this._config);
 
             if (!this._remuxer) {
                 this._remuxer = new MP4Remuxer(this._config);
