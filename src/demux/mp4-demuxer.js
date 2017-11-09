@@ -162,7 +162,7 @@ class MP4Demuxer {
     
         return {
             match: true,
-            consumed: dataOffset,
+            consumed: dataOffset + size,
             dataOffset: dataOffset,
             rawDataSize: size,
             infoOffset: dataOffset + size,
@@ -265,9 +265,9 @@ class MP4Demuxer {
 
     // function parseChunks(chunk: ArrayBuffer, byteStart: number): number;
     parseChunks(chunk, byteStart) {
-        // if (!this._onError || !this._onMediaInfo || !this._onTrackMetadata || !this._onDataAvailable) {
-        //     throw new IllegalStateException('Flv: onError & onMediaInfo & onTrackMetadata & onDataAvailable callback must be specified');
-        // }
+        if (!this._onError || !this._onMediaInfo || !this._onTrackMetadata || !this._onDataAvailable) {
+            throw new IllegalStateException('Flv: onError & onMediaInfo & onTrackMetadata & onDataAvailable callback must be specified');
+        }
 
         let offset = 0;
         let le = this._littleEndian;
@@ -361,6 +361,7 @@ class MP4Demuxer {
                             this.stsz = this._parseStsz(chunk, offset, dataSize);
                             offset += dataSize;
                             // console.log(trak.mdia.minf.stbl.stsz.offset);
+                            this._parseScriptData(chunk.byteLength, this.ftyp, this.stsd, this.stsz);
                             break;
                         case this._types.stco:
                             // console.log(offset);
@@ -381,14 +382,14 @@ class MP4Demuxer {
         }
 
         let sam2chk = this._samDetails(this.stsc, this.stsz, this.stco);
-        this._timeDetials(sam2chk, this._videoMetadata.timescale_mdhd, this._videoMetadata.timescale, this.stts, this.elst);
+        this._timeDetials(sam2chk, this._videoMetadata.timescale_mdhd, this._timescale, this.stts, this.elst);
 
-        this._parseScriptData(this.ftyp, this.stsd);
 
         for (let i = 0; i < sam2chk.length; i++) {
-            this._parseAVCVideoData(chunk, sam2chk[i].offset, sam2chk[i].size, sam2chk.dts);
+            this._parseAVCVideoData(chunk, sam2chk[i].offset, sam2chk[i].size, sam2chk[i].dts, byteStart + sam2chk[i].offset);
         }
 
+        this._dispatch = true;
         // dispatch parsed frames to consumer (typically, the remuxer)
         if (this._isInitialMetadataDispatched()) {
             if (this._dispatch && (this._audioTrack.length || this._videoTrack.length)) {
@@ -442,7 +443,7 @@ class MP4Demuxer {
         }
     }
 
-    _timeDetials(sam, mvhdts, mdhdts, stts, elst) {
+    _timeDetials(sam, mdhdts, mvhdts, stts, elst) {
         let sampleIndex = 0;
         let startTime = (elst !== null) ? elst.entries[0].mediaTime : 0;
         let dtsSum = 0;
@@ -450,9 +451,9 @@ class MP4Demuxer {
         for (let i = 0; i < stts.entryCount; i++) {
             for (let j = 0; j < stts.entries[i].samCount; j++) {
                 let timeEntry = {};
-                timeEntry.dts = dtsSum + stts.entries[i].samDelta * j - startTime / mvhdts * mdhdts;
+                timeEntry.dts = Math.round(dtsSum + stts.entries[i].samDelta / mdhdts * mvhdts * j - startTime / mvhdts * mdhdts);
                 if (j == stts.entries[i].samCount - 1) {
-                    dtsSum += stts.entries[i].samDelta * (j + 1);
+                    dtsSum += stts.entries[i].samDelta / mdhdts * mvhdts * (j + 1);
                 }
                 timeEntry.cts = 0;
                 timeEntry.pts = timeEntry.dts;
@@ -468,16 +469,16 @@ class MP4Demuxer {
         let offset = 8;
         let ftypDetail = {};
 
-        ftypDetail.majorBrand = ReadBoxName(v, dataOffset + offset);
+        ftypDetail.major_brand = ReadBoxName(v, dataOffset + offset);
         offset += 4;
-        ftypDetail.minorVersion = v.getUint32(offset, !le);
+        ftypDetail.minor_version = v.getUint32(offset, !le).toString();
         offset += 4;
         let compatBrands = [];
         while (offset + 4 < dataSize) {
             compatBrands.push(ReadBoxName(v, dataOffset + offset));
             offset += 4;
         }
-        ftypDetail.compatBrands = compatBrands;
+        ftypDetail.compatible_brands = compatBrands;
         return ftypDetail;
     }
 
@@ -503,7 +504,7 @@ class MP4Demuxer {
             offset += 12;
             meta.timescale = v.getUint32(offset, !le);
             offset += 4;
-            meta.duration = v.getUint32(offset, !le);
+            meta.duration_mvhd = v.getUint32(offset, !le);
             // Log.w(this.TAG, this._videoMetadata.duration);
             offset += 4;
         } else {
@@ -583,7 +584,7 @@ class MP4Demuxer {
             offset += 8;
             meta.timescale_mdhd = v.getUint32(offset, !le);
             offset += 4;
-            meta.duration_mdhd = v.getUint32(offset, !le);
+            meta.duration = v.getUint32(offset, !le) / meta.timescale_mdhd * this._timescale;
             offset += 4;
         // } else if (version === 1) {
         //     offset += 16;
@@ -626,9 +627,9 @@ class MP4Demuxer {
 
             stsdDetail.avc1.frameCount = v.getUint16(offset, !le);
             offset += 2;
-            stsdDetail.avc1.strlen = v.getUint8(offset);
-            let bf = new Buffer(v.buffer, dataOffset + offset + 1, stsdDetail.avc1.strlen);
-            stsdDetail.avc1.compreName = bf.toString('ascii');
+            // stsdDetail.avc1.strlen = v.getUint8(offset);
+            // let bf = new Buffer(v.buffer, dataOffset + offset + 1, stsdDetail.avc1.strlen);
+            // stsdDetail.avc1.compreName = bf.toString('ascii');
             offset += 32;
 
             stsdDetail.avc1.depth = v.getUint16(offset, !le);
@@ -636,11 +637,11 @@ class MP4Demuxer {
 
             let avcC = {};
             avcC.size = v.getUint32(offset, !le);
-            let avcCData = new Uint8Array(avcC.size);
-            avcCData.set(new Uint8Array(arrayBuffer, dataOffset + offset, avcC.size), 0);
+            let avcCData = new Uint8Array(avcC.size - 8);
+            offset += 8;
+            avcCData.set(new Uint8Array(arrayBuffer, dataOffset + offset, avcC.size - 8), 0);
             Log.v(this.TAG, 'Copied AVCDecoderConfigurationRecord!');
             meta.avcc = avcCData;
-            offset += 8;
             let confVer = v.getUint8(offset++);  // configurationVersion
             let avcProfile = v.getUint8(offset++);  // avcProfileIndication
             let profileCompatibility = v.getUint8(offset++);  // profile_compatibility
@@ -731,10 +732,10 @@ class MP4Demuxer {
     
                 if (mi.hasAudio) {
                     if (mi.audioCodec != null) {
-                        mi.mimeType = 'video/x-mp4; codecs="' + mi.videoCodec + ',' + mi.audioCodec + '"';
+                        mi.mimeType = 'video/mp4; codecs="' + mi.videoCodec + ',' + mi.audioCodec + '"';
                     }
                 } else {
-                    mi.mimeType = 'video/x-mp4; codecs="' + mi.videoCodec + '"';
+                    mi.mimeType = 'video/mp4; codecs="' + mi.videoCodec + '"';
                 }
                 if (mi.isComplete()) {
                     this._onMediaInfo(mi);
@@ -860,11 +861,12 @@ class MP4Demuxer {
         let version = v.getUint8(offset);
         let flag = v.getUint32(offset, !le) & 0x00FFFFFF;
         offset += 4;
-        let entrytsunt = v.getUint32(offset, !le);
+        let entrycount = v.getUint32(offset, !le);
+        sttsDetail.entryCount = entrycount;
         offset += 4;
 
         sttsDetail.entries = [];
-        for (let i = 0; i < entrytsunt; i++) {
+        for (let i = 0; i < entrycount; i++) {
             let entry = {};
             entry.samCount = v.getUint32(offset, !le);
             offset += 4;
@@ -876,7 +878,7 @@ class MP4Demuxer {
     }
 
 
-    _parseScriptData(ftyp, stsd) {
+    _parseScriptData(filesize, ftyp, stsd, stsz) {
         let scriptData = {};
         scriptData.onMetaData = {};
         scriptData.onMetaData = Object.assign(scriptData.onMetaData, ftyp);
@@ -920,9 +922,14 @@ class MP4Demuxer {
 
         let duration = this._videoMetadata.duration;
         this._duration = duration;
+        onMetaData.duration = duration / this._timescale;
         this._mediaInfo.duration = duration;
 
-        onMetaData.videodatarate = this.stsz.total / this.duration * this.timescale;
+        onMetaData.videocodecid = 7;
+
+        onMetaData.filesize = filesize;
+
+        onMetaData.videodatarate = this.stsz.total * 8 / onMetaData.duration / 1000;
         this._mediaInfo.videoDataRate = onMetaData.videodatarate;
         // if (typeof this._videoMetadata.duration === 'number') {  // duration
         //     if (!this._durationOverrided) {
@@ -930,17 +937,20 @@ class MP4Demuxer {
         // } else {
         //     this._mediaInfo.duration = 0;
         // }
-        if (typeof onMetaData.framerate === 'number') {  // framerate
-            let fps_num = Math.floor(onMetaData.framerate * 1000);
-            if (fps_num > 0) {
-                let fps = fps_num / 1000;
-                this._referenceFrameRate.fixed = true;
-                this._referenceFrameRate.fps = fps;
-                this._referenceFrameRate.fps_num = fps_num;
-                this._referenceFrameRate.fps_den = 1000;
-                this._mediaInfo.fps = fps;
-            }
+        
+        onMetaData.framerate = stsz.sampleCount * this._timescale / this._duration;
+        let fps_num = Math.floor(onMetaData.framerate * 1000);
+        if (fps_num > 0) {
+            let fps = fps_num / 1000;
+            this._referenceFrameRate.fixed = true;
+            this._referenceFrameRate.fps = fps;
+            this._referenceFrameRate.fps_num = fps_num;
+            this._referenceFrameRate.fps_den = 1000;
+            this._mediaInfo.fps = fps;
         }
+
+        // if (typeof onMetaData.framerate === 'number') {  // framerate
+        // }
         // if (typeof onMetaData.keyframes === 'object') {  // keyframes
         //     this._mediaInfo.hasKeyframesIndex = true;
         //     let keyframes = onMetaData.keyframes;
@@ -974,7 +984,7 @@ class MP4Demuxer {
     //     };
     // }
 
-    _parseAVCVideoData(arrayBuffer, dataOffset, dataSize, dts) {
+    _parseAVCVideoData(arrayBuffer, dataOffset, dataSize, dts, tagPosition) {
         let le = this._littleEndian;
         let v = new DataView(arrayBuffer, dataOffset, dataSize);
         let keyframe = false;
@@ -1022,9 +1032,9 @@ class MP4Demuxer {
                 cts: 0,
                 pts: dts
             };
-            // if (keyframe) {
-            //     avcSample.fileposition = tagPosition;
-            // }
+            if (keyframe) {
+                avcSample.fileposition = tagPosition;
+            }
             track.samples.push(avcSample);
             track.length += length;
         }

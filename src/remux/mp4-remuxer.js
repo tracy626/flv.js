@@ -78,7 +78,9 @@ class MP4Remuxer {
 
     bindDataSource(producer) {
         producer.onDataAvailable = this.remux.bind(this);
+        Log.i(this.TAG, 'bind data source to producer, onDataAvailable');
         producer.onTrackMetadata = this._onTrackMetadataReceived.bind(this);
+        Log.i(this.TAG, 'bind data source to producer, onTrackMetadata');
         return this;
     }
 
@@ -131,6 +133,7 @@ class MP4Remuxer {
             this._calculateDtsBase(audioTrack, videoTrack);
         }
         this._remuxVideo(videoTrack);
+        Log.i(this.TAG, 'Remuxed video.');
         this._remuxAudio(audioTrack);
     }
 
@@ -154,6 +157,7 @@ class MP4Remuxer {
         } else if (type === 'video') {
             this._videoMeta = metadata;
             metabox = MP4.generateInitSegment(metadata);
+            Log.i(this.TAG, 'Generate Init Segment');
         } else {
             return;
         }

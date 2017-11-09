@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+const fs = require('fs');
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
 // import Browser from '../utils/browser.js';
@@ -437,6 +438,9 @@ class MSEController {
                 }
 
                 try {
+                    // let segmentdata = new Buffer(segment.data);
+                    // // fs.writeFile(`mp4${segment.data.byteLength}.segdat`, segmentdata, (err) => {});
+                    // Log.i(this.TAG, segmentdata);
                     this._sourceBuffers[type].appendBuffer(segment.data);
                     this._isBufferFull = false;
                     if (type === 'video' && segment.hasOwnProperty('info')) {

@@ -267,9 +267,10 @@ class TransmuxingController {
             this._demuxer.onError = this._onDemuxException.bind(this);
             this._demuxer.onMediaInfo = this._onMediaInfo.bind(this);
 
-            this._remuxer.bindDataSource(this._demuxer
-                         .bindDataSource(this._ioctl
-            ));
+            Log.i(this.TAG, 'bind data source from io to demuxer');
+            let demux = this._demuxer.bindDataSource(this._ioctl);
+            Log.i(this.TAG, 'bind data source from demuxer to remuxer');
+            this._remuxer.bindDataSource(demux);
 
             this._remuxer.onInitSegment = this._onRemuxerInitSegmentArrival.bind(this);
             this._remuxer.onMediaSegment = this._onRemuxerMediaSegmentArrival.bind(this);
