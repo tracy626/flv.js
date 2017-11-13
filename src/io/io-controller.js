@@ -47,7 +47,7 @@ class IOController {
         this._config = config;
         this._extraData = extraData;
 
-        this._stashInitialSize = 1024 * 1024;  // default initial size: 384KB
+        this._stashInitialSize = 1024 * 1024 * 5;  // default initial size: 384KB
         if (config.stashInitialSize != undefined && config.stashInitialSize > 0) {
             // apply from config
             this._stashInitialSize = config.stashInitialSize;
@@ -55,7 +55,7 @@ class IOController {
 
         this._stashUsed = 0;
         this._stashSize = this._stashInitialSize;
-        this._bufferSize = 1024 * 1024 * 3;  // initial size: 3MB
+        this._bufferSize = 1024 * 1024 * 6;  // initial size: 3MB
         this._stashBuffer = new ArrayBuffer(this._bufferSize);
         this._stashByteStart = 0;
         this._enableStash = true;

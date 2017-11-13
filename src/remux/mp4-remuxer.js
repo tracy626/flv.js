@@ -156,6 +156,13 @@ class MP4Remuxer {
             }
         } else if (type === 'video') {
             this._videoMeta = metadata;
+            let date = new Date();
+            let hour = date.getHours();
+            let minute = date.getMinutes();
+            let second = date.getSeconds();
+            let ms = date.getMilliseconds();
+            let time = hour + ':' + minute + ':' + second + ':' + ms;
+            Log.i(this.TAG, time);
             metabox = MP4.generateInitSegment(metadata);
             Log.i(this.TAG, 'Generate Init Segment');
         } else {

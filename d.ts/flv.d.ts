@@ -72,15 +72,15 @@ declare namespace FlvJs {
         referrerPolicy?: string
     }
 
-    interface FeatureList {
-        mseFlvPlayback: boolean,
-        mseLiveFlvPlayback: boolean,
-        networkStreamIO: boolean,
-        networkLoaderName: string,
-        nativeMP4H264Playback: boolean,
-        nativeWebmVP8Playback: boolean,
-        nativeWebmVP9Playback: boolean
-    }
+    // interface FeatureList {
+    //     mseFlvPlayback: boolean,
+    //     mseLiveFlvPlayback: boolean,
+    //     networkStreamIO: boolean,
+    //     networkLoaderName: string,
+    //     nativeMP4H264Playback: boolean,
+    //     nativeWebmVP8Playback: boolean,
+    //     nativeWebmVP9Playback: boolean
+    // }
 
     interface PlayerConstructor {
         new (mediaDataSource: MediaDataSource, config?: Config): Player;
@@ -110,23 +110,23 @@ declare namespace FlvJs {
     interface FlvPlayer extends Player {
     }
 
-    interface NativePlayer extends Player {
-    }
+    // interface NativePlayer extends Player {
+    // }
 
-    interface LoggingControl {
-        forceGlobalTag: boolean;
-        globalTag: string;
-        enableAll: boolean;
-        enableDebug: boolean;
-        enableVerbose: boolean;
-        enableInfo: boolean;
-        enableWarn: boolean;
-        enableError: boolean;
-        getConfig(): Object;
-        applyConfig(config: Object): void;
-        addLogListener(listener: Function): void;
-        removeLogListener(listener: Function): void;
-    }
+    // interface LoggingControl {
+    //     forceGlobalTag: boolean;
+    //     globalTag: string;
+    //     enableAll: boolean;
+    //     enableDebug: boolean;
+    //     enableVerbose: boolean;
+    //     enableInfo: boolean;
+    //     enableWarn: boolean;
+    //     enableError: boolean;
+    //     getConfig(): Object;
+    //     applyConfig(config: Object): void;
+    //     addLogListener(listener: Function): void;
+    //     removeLogListener(listener: Function): void;
+    // }
 
     interface Events {
         ERROR: string,
@@ -159,14 +159,14 @@ declare namespace FlvJs {
 
 declare var flvjs: {
     createPlayer(mediaDataSource: FlvJs.MediaDataSource, config?: FlvJs.Config): FlvJs.Player,
-    isSupported(): boolean,
-    getFeatureList(): FlvJs.FeatureList,
+    // isSupported(): boolean,
+    // getFeatureList(): FlvJs.FeatureList,
 
     Events: FlvJs.Events,
     ErrorTypes: FlvJs.ErrorTypes,
     ErrorDetails: FlvJs.ErrorDetails,
 
     FlvPlayer: FlvJs.PlayerConstructor,
-    NativePlayer: FlvJs.PlayerConstructor,
-    LoggingControl: FlvJs.LoggingControl
+    // NativePlayer: FlvJs.PlayerConstructor,
+    // LoggingControl: FlvJs.LoggingControl
 };
