@@ -152,6 +152,13 @@ class MP4Demuxer {
         if (data[4] !== 0x66 || data[5] !== 0x74 || data[6] !== 0x79 || data[7] !== 0x70) {
             return mismatch;
         }
+
+        let offset = 0;
+        let v = new DataView(buffer, offset);
+        let box_n = ReadBoxName(v, offset + 4);
+        if (box_n !== 'ftyp') {
+            return mismatch;
+        }
         
         let hasAudio = false;
         let hasVideo = true;
@@ -306,78 +313,73 @@ class MP4Demuxer {
             offset += 8;
         }
 
+        let traksize;
         while (offset < chunk.byteLength) {
             this._dispatch = true;
             dataSize = v.getUint32(offset, !le);
             box_n = ReadBoxName(v, offset + 4);
 
-            if (box_n === this._types.mvhd) {
-                this._parseMvhd(chunk, offset, dataSize);
-                offset += dataSize;
-            } else if (box_n === this._types.trak) {
-                offset += 8;
-                readTrak: while (offset < chunk.byteLength) {
+            switch (box_n) {
+                case this._types.mdia:
+                case this._types.minf:
+                case this._types.stbl:
+                    offset += 8;
+                    break;
+                case this._types.trak:
+                    traksize = dataSize;
+                    offset += 8;
+                    break;
+                case this._types.mvhd:
+                    this._parseMvhd(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                case this._types.tkhd: {
+                    let isVideoTrak = this._parseTkhd(chunk, offset, dataSize);
+                    if (!isVideoTrak) {
+                        // console.warn('MP4Demuxer: Meet audio trak or other!');                
+                        Log.w(this.TAG, 'Meet audio trak or other!');
+                        offset = offset - 8 + traksize;
+                        break;
+                    }
+                    offset += dataSize;
+                    break;
+                }
+                case this._types.edts:
+                    offset += 8;
                     dataSize = v.getUint32(offset, !le);
                     box_n = ReadBoxName(v, offset + 4);
-
-                    switch (box_n) {
-                        case this._types.mdia:
-                        case this._types.minf:
-                        case this._types.stbl:
-                            offset += 8;
-                            break;
-                        case this._types.tkhd: {
-                            let isVideoTrak = this._parseTkhd(chunk, offset, dataSize);
-                            if (!isVideoTrak) {
-                                // Log.w(this.TAG, offset);
-                                Log.w(this.TAG, 'Meet audio trak or other!');
-                                break readTrak;
-                            }
-                            offset += dataSize;
-                            break;
-                        }
-                        case this._types.edts:
-                            offset += 8;
-                            dataSize = v.getUint32(offset, !le);
-                            box_n = ReadBoxName(v, offset + 4);
-                            if (box_n === this._types.elst) {
-                                this.elst = this._parseElst(chunk, offset, dataSize);
-                            }
-                            offset += dataSize;
-                            break;
-                        case this._types.mdhd:
-                            this._parseMdhd(chunk, offset, dataSize);
-                            offset += dataSize;
-                            break;
-                        case this._types.stsd:
-                            this.stsd = this._parseStsd(chunk, offset, dataSize);
-                            offset += dataSize;
-                            break;
-                        case this._types.stsc:
-                            this.stsc = this._parseStsc(chunk, offset, dataSize);
-                            offset += dataSize;
-                            break;
-                        case this._types.stsz:
-                            this.stsz = this._parseStsz(chunk, offset, dataSize);
-                            offset += dataSize;
-                            // console.log(trak.mdia.minf.stbl.stsz.offset);
-                            this._parseScriptData(chunk.byteLength, this.ftyp, this.stsd, this.stsz);
-                            break;
-                        case this._types.stco:
-                            // console.log(offset);
-                            this.stco = this._parseStco(chunk, offset, dataSize);
-                            offset += dataSize;
-                            break;
-                        case this._types.stts:
-                            this.stts = this._parseStts(chunk, offset, dataSize);
-                            offset += dataSize;
-                            break;
-                        default:
-                            offset += dataSize;
+                    if (box_n === this._types.elst) {
+                        this.elst = this._parseElst(chunk, offset, dataSize);
                     }
-                }
-            } else {
-                offset += dataSize;
+                    offset += dataSize;
+                    break;
+                case this._types.mdhd:
+                    this._parseMdhd(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                case this._types.stsd:
+                    this.stsd = this._parseStsd(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                case this._types.stsc:
+                    this.stsc = this._parseStsc(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                case this._types.stsz:
+                    this.stsz = this._parseStsz(chunk, offset, dataSize);
+                    offset += dataSize;
+                    this._parseScriptData(chunk.byteLength, this.ftyp, this.stsd, this.stsz);
+                    break;
+                case this._types.stco:
+                    this.stco = this._parseStco(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                case this._types.stts:
+                    this.stts = this._parseStts(chunk, offset, dataSize);
+                    offset += dataSize;
+                    break;
+                default:
+                    offset += dataSize;
             }
         }
 

@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-const fs = require('fs');
 import EventEmitter from 'events';
 import Log from '../utils/logger.js';
 // import Browser from '../utils/browser.js';
