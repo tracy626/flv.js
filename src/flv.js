@@ -73,7 +73,7 @@ flvjs.Events = PlayerEvents;
 flvjs.ErrorTypes = ErrorTypes;
 flvjs.ErrorDetails = ErrorDetails;
 
-flvjs.FlvPlayer = FlvPlayer;
+// flvjs.FlvPlayer = FlvPlayer;
 // flvjs.NativePlayer = NativePlayer;
 // flvjs.LoggingControl = LoggingControl;
 

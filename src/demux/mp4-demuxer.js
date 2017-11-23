@@ -965,7 +965,7 @@ class MP4Demuxer {
         this._mediaInfo.metadata = onMetaData;
         Log.v(this.TAG, 'Parsed onMetaData');
         if (this._mediaInfo.isComplete()) {
-            this._onMediaInfo(this._mediaInfo);
+            // this._onMediaInfo(this._mediaInfo);
         }
     }
 

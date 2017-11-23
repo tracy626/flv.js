@@ -133,26 +133,26 @@ class FlvPlayer {
         this._emitter = null;
     }
 
-    on(event, listener) {
-        if (event === PlayerEvents.MEDIA_INFO) {
-            if (this._mediaInfo != null) {
-                Promise.resolve().then(() => {
-                    this._emitter.emit(PlayerEvents.MEDIA_INFO, this.mediaInfo);
-                });
-            }
-        } else if (event === PlayerEvents.STATISTICS_INFO) {
-            if (this._statisticsInfo != null) {
-                Promise.resolve().then(() => {
-                    this._emitter.emit(PlayerEvents.STATISTICS_INFO, this.statisticsInfo);
-                });
-            }
-        }
-        this._emitter.addListener(event, listener);
-    }
+    // on(event, listener) {
+    //     if (event === PlayerEvents.MEDIA_INFO) {
+    //         if (this._mediaInfo != null) {
+    //             Promise.resolve().then(() => {
+    //                 this._emitter.emit(PlayerEvents.MEDIA_INFO, this.mediaInfo);
+    //             });
+    //         }
+    //     } else if (event === PlayerEvents.STATISTICS_INFO) {
+    //         if (this._statisticsInfo != null) {
+    //             Promise.resolve().then(() => {
+    //                 this._emitter.emit(PlayerEvents.STATISTICS_INFO, this.statisticsInfo);
+    //             });
+    //         }
+    //     }
+    //     this._emitter.addListener(event, listener);
+    // }
 
-    off(event, listener) {
-        this._emitter.removeListener(event, listener);
-    }
+    // off(event, listener) {
+    //     this._emitter.removeListener(event, listener);
+    // }
 
     attachMediaElement(mediaElement) {
         this._mediaElement = mediaElement;

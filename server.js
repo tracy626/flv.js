@@ -6,7 +6,7 @@ var app = express.createServer();
 // var server = http.createServer(app);
 
 const hostname = '127.0.0.1';
-var port = 3000;
+var port = 8888;
 
 app.set('port', process.env.PORT || port);
 app.set('view engine', 'html');

@@ -190,53 +190,53 @@ class Transmuxer {
         });
     }
 
-    _onLoggingConfigChanged(config) {
-        if (this._worker) {
-            this._worker.postMessage({cmd: 'logging_config', param: config});
-        }
-    }
+    // _onLoggingConfigChanged(config) {
+    //     if (this._worker) {
+    //         this._worker.postMessage({cmd: 'logging_config', param: config});
+    //     }
+    // }
 
-    _onWorkerMessage(e) {
-        let message = e.data;
-        let data = message.data;
+    // _onWorkerMessage(e) {
+    //     let message = e.data;
+    //     let data = message.data;
 
-        if (message.msg === 'destroyed' || this._workerDestroying) {
-            this._workerDestroying = false;
-            this._worker.terminate();
-            this._worker = null;
-            return;
-        }
+    //     if (message.msg === 'destroyed' || this._workerDestroying) {
+    //         this._workerDestroying = false;
+    //         this._worker.terminate();
+    //         this._worker = null;
+    //         return;
+    //     }
 
-        switch (message.msg) {
-            case TransmuxingEvents.INIT_SEGMENT:
-            case TransmuxingEvents.MEDIA_SEGMENT:
-                this._emitter.emit(message.msg, data.type, data.data);
-                break;
-            case TransmuxingEvents.LOADING_COMPLETE:
-            case TransmuxingEvents.RECOVERED_EARLY_EOF:
-                this._emitter.emit(message.msg);
-                break;
-            case TransmuxingEvents.MEDIA_INFO:
-                Object.setPrototypeOf(data, MediaInfo.prototype);
-                this._emitter.emit(message.msg, data);
-                break;
-            case TransmuxingEvents.STATISTICS_INFO:
-                this._emitter.emit(message.msg, data);
-                break;
-            case TransmuxingEvents.IO_ERROR:
-            case TransmuxingEvents.DEMUX_ERROR:
-                this._emitter.emit(message.msg, data.type, data.info);
-                break;
-            case TransmuxingEvents.RECOMMEND_SEEKPOINT:
-                this._emitter.emit(message.msg, data);
-                break;
-            case 'logcat_callback':
-                Log.emitter.emit('log', data.type, data.logcat);
-                break;
-            default:
-                break;
-        }
-    }
+    //     switch (message.msg) {
+    //         case TransmuxingEvents.INIT_SEGMENT:
+    //         case TransmuxingEvents.MEDIA_SEGMENT:
+    //             this._emitter.emit(message.msg, data.type, data.data);
+    //             break;
+    //         case TransmuxingEvents.LOADING_COMPLETE:
+    //         case TransmuxingEvents.RECOVERED_EARLY_EOF:
+    //             this._emitter.emit(message.msg);
+    //             break;
+    //         case TransmuxingEvents.MEDIA_INFO:
+    //             Object.setPrototypeOf(data, MediaInfo.prototype);
+    //             this._emitter.emit(message.msg, data);
+    //             break;
+    //         case TransmuxingEvents.STATISTICS_INFO:
+    //             this._emitter.emit(message.msg, data);
+    //             break;
+    //         case TransmuxingEvents.IO_ERROR:
+    //         case TransmuxingEvents.DEMUX_ERROR:
+    //             this._emitter.emit(message.msg, data.type, data.info);
+    //             break;
+    //         case TransmuxingEvents.RECOMMEND_SEEKPOINT:
+    //             this._emitter.emit(message.msg, data);
+    //             break;
+    //         case 'logcat_callback':
+    //             Log.emitter.emit('log', data.type, data.logcat);
+    //             break;
+    //         default:
+    //             break;
+    //     }
+    // }
 
 }
 

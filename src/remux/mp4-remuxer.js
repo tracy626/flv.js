@@ -49,17 +49,6 @@ class MP4Remuxer {
         this._onInitSegment = null;
         this._onMediaSegment = null;
 
-        // Workaround for chrome < 50: Always force first sample as a Random Access Point in media segment
-        // see https://bugs.chromium.org/p/chromium/issues/detail?id=229412
-        this._forceFirstIDR = false;
-
-        // Workaround for IE11/Edge: Fill silent aac frame after keyframe-seeking
-        // Make audio beginDts equals with video beginDts, in order to fix seek freeze
-        this._fillSilentAfterSeek = false;
-
-        // While only FireFox supports 'audio/mp4, codecs="mp3"', use 'audio/mpeg' for chrome, safari, ...
-        this._mp3UseMpegAudio = true;
-
         this._fillAudioTimestampGap = this._config.fixAudioTimestampGap;
     }
 
@@ -145,7 +134,7 @@ class MP4Remuxer {
 
         if (type === 'audio') {
             this._audioMeta = metadata;
-            if (metadata.codec === 'mp3' && this._mp3UseMpegAudio) {
+            if (metadata.codec === 'mp3') {
                 // 'audio/mpeg' for MP3 audio track
                 container = 'mpeg';
                 codec = '';
@@ -209,7 +198,7 @@ class MP4Remuxer {
         let firstDts = -1, lastDts = -1, lastPts = -1;
         let refSampleDuration = this._audioMeta.refSampleDuration;
 
-        let mpegRawTrack = this._audioMeta.codec === 'mp3' && this._mp3UseMpegAudio;
+        let mpegRawTrack = this._audioMeta.codec === 'mp3';
         let firstSegmentAfterSeek = this._dtsBaseInited && this._audioNextDts === undefined;
 
         let insertPrefixSilentFrame = false;
@@ -241,11 +230,6 @@ class MP4Remuxer {
         } else {  // this._audioNextDts == undefined
             if (this._audioSegmentInfoList.isEmpty()) {
                 dtsCorrection = 0;
-                if (this._fillSilentAfterSeek && !this._videoSegmentInfoList.isEmpty()) {
-                    if (this._audioMeta.originalCodec !== 'mp3') {
-                        insertPrefixSilentFrame = true;
-                    }
-                }
             } else {
                 let lastSample = this._audioSegmentInfoList.getLastSampleBefore(firstSampleOriginalDts);
                 if (lastSample != null) {
@@ -613,14 +597,6 @@ class MP4Remuxer {
 
         track.samples = mp4Samples;
         track.sequenceNumber++;
-
-        // workaround for chrome < 50: force first sample as a random access point
-        // see https://bugs.chromium.org/p/chromium/issues/detail?id=229412
-        if (this._forceFirstIDR) {
-            let flags = mp4Samples[0].flags;
-            flags.dependsOn = 2;
-            flags.isNonSync = 0;
-        }
 
         let moofbox = MP4.moof(track, firstDts);
         track.samples = [];
